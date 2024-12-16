@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   s.tvos.deployment_target = "9.0"
   s.watchos.deployment_target = "2.0"
 
-  s.source       = { :git => "https://github.com/KristopherGBaker/libcmark_gfm.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/Heonseob/libcmark_gfm.git", :tag => "#{s.version}" }
   s.source_files = "Sources/libcmark_gfm/**/*{.c,.h}"
   s.preserve_paths = "Sources/libcmark_gfm/**/*"
   s.public_header_files = "Sources/libcmark_gfm/include/*.h"

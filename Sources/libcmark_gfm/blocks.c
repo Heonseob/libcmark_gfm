@@ -1112,88 +1112,97 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
     S_find_first_nonspace(parser, input);
     indented = parser->indent >= CODE_INDENT;
 
-    if (!indented && peek_at(input, parser->first_nonspace) == '>') {
+// MACTALK - CMARK_NODE_HEADING 무시 처리
+//    if (!indented && peek_at(input, parser->first_nonspace) == '>') {
+//
+//      bufsize_t blockquote_startpos = parser->first_nonspace;
+//
+//      S_advance_offset(parser, input,
+//                       parser->first_nonspace + 1 - parser->offset, false);
+//      // optional following character
+//      if (S_is_space_or_tab(peek_at(input, parser->offset))) {
+//        S_advance_offset(parser, input, 1, true);
+//      }
+//      *container = add_child(parser, *container, CMARK_NODE_BLOCK_QUOTE,
+//                             blockquote_startpos + 1);
 
-      bufsize_t blockquote_startpos = parser->first_nonspace;
+// MACTALK - CMARK_NODE_HEADING 무시 처리
+//    } else if (!indented && (matched = scan_atx_heading_start(
+//                                 input, parser->first_nonspace))) {
+//      bufsize_t hashpos;
+//      int level = 0;
+//      bufsize_t heading_startpos = parser->first_nonspace;
+//
+//      S_advance_offset(parser, input,
+//                       parser->first_nonspace + matched - parser->offset,
+//                       false);
+//      *container = add_child(parser, *container, CMARK_NODE_HEADING,
+//                             heading_startpos + 1);
+//
+//      hashpos = cmark_chunk_strchr(input, '#', parser->first_nonspace);
+//
+//      while (peek_at(input, hashpos) == '#') {
+//        level++;
+//        hashpos++;
+//      }
+//
+//      (*container)->as.heading.level = level;
+//      (*container)->as.heading.setext = false;
+//      (*container)->internal_offset = matched;
 
-      S_advance_offset(parser, input,
-                       parser->first_nonspace + 1 - parser->offset, false);
-      // optional following character
-      if (S_is_space_or_tab(peek_at(input, parser->offset))) {
-        S_advance_offset(parser, input, 1, true);
-      }
-      *container = add_child(parser, *container, CMARK_NODE_BLOCK_QUOTE,
-                             blockquote_startpos + 1);
+// MACTALK - CMARK_NODE_CODE_BLOCK 무시 처리
+//    } else if (!indented && (matched = scan_open_code_fence(
+//                                 input, parser->first_nonspace))) {
+//      *container = add_child(parser, *container, CMARK_NODE_CODE_BLOCK,
+//                             parser->first_nonspace + 1);
+//      (*container)->as.code.fenced = true;
+//      (*container)->as.code.fence_char = peek_at(input, parser->first_nonspace);
+//      (*container)->as.code.fence_length = (matched > 255) ? 255 : (uint8_t)matched;
+//      (*container)->as.code.fence_offset =
+//          (int8_t)(parser->first_nonspace - parser->offset);
+//      (*container)->as.code.info = cmark_chunk_literal("");
+//      S_advance_offset(parser, input,
+//                       parser->first_nonspace + matched - parser->offset,
+//                       false);
 
-    } else if (!indented && (matched = scan_atx_heading_start(
-                                 input, parser->first_nonspace))) {
-      bufsize_t hashpos;
-      int level = 0;
-      bufsize_t heading_startpos = parser->first_nonspace;
-
-      S_advance_offset(parser, input,
-                       parser->first_nonspace + matched - parser->offset,
-                       false);
-      *container = add_child(parser, *container, CMARK_NODE_HEADING,
-                             heading_startpos + 1);
-
-      hashpos = cmark_chunk_strchr(input, '#', parser->first_nonspace);
-
-      while (peek_at(input, hashpos) == '#') {
-        level++;
-        hashpos++;
-      }
-
-      (*container)->as.heading.level = level;
-      (*container)->as.heading.setext = false;
-      (*container)->internal_offset = matched;
-
-    } else if (!indented && (matched = scan_open_code_fence(
-                                 input, parser->first_nonspace))) {
-      *container = add_child(parser, *container, CMARK_NODE_CODE_BLOCK,
-                             parser->first_nonspace + 1);
-      (*container)->as.code.fenced = true;
-      (*container)->as.code.fence_char = peek_at(input, parser->first_nonspace);
-      (*container)->as.code.fence_length = (matched > 255) ? 255 : (uint8_t)matched;
-      (*container)->as.code.fence_offset =
-          (int8_t)(parser->first_nonspace - parser->offset);
-      (*container)->as.code.info = cmark_chunk_literal("");
-      S_advance_offset(parser, input,
-                       parser->first_nonspace + matched - parser->offset,
-                       false);
-
-    } else if (!indented && ((matched = scan_html_block_start(
-                                  input, parser->first_nonspace)) ||
-                             (cont_type != CMARK_NODE_PARAGRAPH &&
-                              (matched = scan_html_block_start_7(
-                                   input, parser->first_nonspace))))) {
-      *container = add_child(parser, *container, CMARK_NODE_HTML_BLOCK,
-                             parser->first_nonspace + 1);
-      (*container)->as.html_block_type = matched;
-      // note, we don't adjust parser->offset because the tag is part of the
-      // text
-    } else if (!indented && cont_type == CMARK_NODE_PARAGRAPH &&
-               (lev =
-                    scan_setext_heading_line(input, parser->first_nonspace))) {
-      // finalize paragraph, resolving reference links
-      has_content = resolve_reference_link_definitions(parser, *container);
-
-      if (has_content) {
-
-        (*container)->type = (uint16_t)CMARK_NODE_HEADING;
-        (*container)->as.heading.level = lev;
-        (*container)->as.heading.setext = true;
-        S_advance_offset(parser, input, input->len - 1 - parser->offset, false);
-      }
-    } else if (!indented &&
-               !(cont_type == CMARK_NODE_PARAGRAPH && !all_matched) &&
-	       (parser->thematic_break_kill_pos <= parser->first_nonspace) &&
-               (matched = S_scan_thematic_break(parser, input, parser->first_nonspace))) {
-      // it's only now that we know the line is not part of a setext heading:
-      *container = add_child(parser, *container, CMARK_NODE_THEMATIC_BREAK,
-                             parser->first_nonspace + 1);
-      S_advance_offset(parser, input, input->len - 1 - parser->offset, false);
-    } else if (!indented &&
+// MACTALK - CMARK_NODE_HTML_BLOCK 무시 처리
+//    } else if (!indented && ((matched = scan_html_block_start(
+//                                  input, parser->first_nonspace)) ||
+//                             (cont_type != CMARK_NODE_PARAGRAPH &&
+//                              (matched = scan_html_block_start_7(
+//                                   input, parser->first_nonspace))))) {
+//      *container = add_child(parser, *container, CMARK_NODE_HTML_BLOCK,
+//                             parser->first_nonspace + 1);
+//      (*container)->as.html_block_type = matched;
+//      // note, we don't adjust parser->offset because the tag is part of the
+//      // text
+  
+// MACTALK - CMARK_NODE_HEADING 무시 처리
+//    } else if (!indented && cont_type == CMARK_NODE_PARAGRAPH &&
+//               (lev =
+//                    scan_setext_heading_line(input, parser->first_nonspace))) {
+//      // finalize paragraph, resolving reference links
+//      has_content = resolve_reference_link_definitions(parser, *container);
+//
+//      if (has_content) {
+//
+//        (*container)->type = (uint16_t)CMARK_NODE_HEADING;
+//        (*container)->as.heading.level = lev;
+//        (*container)->as.heading.setext = true;
+//        S_advance_offset(parser, input, input->len - 1 - parser->offset, false);
+//      }
+      
+// MACTALK - CMARK_NODE_THEMATIC_BREAK 무시 처리
+//    } else if (!indented &&
+//               !(cont_type == CMARK_NODE_PARAGRAPH && !all_matched) &&
+//	       (parser->thematic_break_kill_pos <= parser->first_nonspace) &&
+//               (matched = S_scan_thematic_break(parser, input, parser->first_nonspace))) {
+//      // it's only now that we know the line is not part of a setext heading:
+//      *container = add_child(parser, *container, CMARK_NODE_THEMATIC_BREAK,
+//                             parser->first_nonspace + 1);
+//      S_advance_offset(parser, input, input->len - 1 - parser->offset, false);
+      
+    if (!indented &&
                parser->options & CMARK_OPT_FOOTNOTES &&
                (matched = scan_footnote_definition(input, parser->first_nonspace))) {
       cmark_chunk c = cmark_chunk_dup(input, parser->first_nonspace + 2, matched - 2);
@@ -1208,6 +1217,7 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
       (*container)->as.literal = c;
 
       (*container)->internal_offset = matched;
+      
     } else if ((!indented || cont_type == CMARK_NODE_LIST) &&
 	       parser->indent < 4 &&
                (matched = parse_list_marker(
@@ -1266,15 +1276,17 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
       /* TODO: static */
       memcpy(&((*container)->as.list), data, sizeof(*data));
       parser->mem->free(data);
-    } else if (indented && !maybe_lazy && !parser->blank) {
-      S_advance_offset(parser, input, CODE_INDENT, true);
-      *container = add_child(parser, *container, CMARK_NODE_CODE_BLOCK,
-                             parser->offset + 1);
-      (*container)->as.code.fenced = false;
-      (*container)->as.code.fence_char = 0;
-      (*container)->as.code.fence_length = 0;
-      (*container)->as.code.fence_offset = 0;
-      (*container)->as.code.info = cmark_chunk_literal("");
+
+// MACTALK - CMARK_NODE_CODE_BLOCK 무시 처리
+//    } else if (indented && !maybe_lazy && !parser->blank) {
+//      S_advance_offset(parser, input, CODE_INDENT, true);
+//      *container = add_child(parser, *container, CMARK_NODE_CODE_BLOCK,
+//                             parser->offset + 1);
+//      (*container)->as.code.fenced = false;
+//      (*container)->as.code.fence_char = 0;
+//      (*container)->as.code.fence_length = 0;
+//      (*container)->as.code.fence_offset = 0;
+//      (*container)->as.code.info = cmark_chunk_literal("");
     } else {
       cmark_llist *tmp;
       cmark_node *new_container = NULL;
