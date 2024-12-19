@@ -23,6 +23,8 @@
 #include "buffer.h"
 #include "footnotes.h"
 
+#include "strikethrough.h"
+
 #define CODE_INDENT 4
 #define TAB_STOP 4
 
@@ -667,6 +669,11 @@ cmark_node *cmark_parse_file(FILE *f, int options) {
 
 cmark_node *cmark_parse_document(const char *buffer, size_t len, int options) {
   cmark_parser *parser = cmark_parser_new(options);
+
+    // MACTALK - CMARK_NODE_STRIKETHROUGH 지원
+//  cmark_syntax_extension *extension = create_strikethrough_extension();
+//  cmark_parser_attach_syntax_extension(parser, extension);
+    
   cmark_node *document;
 
   S_parser_feed(parser, (const unsigned char *)buffer, len, true);

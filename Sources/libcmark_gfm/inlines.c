@@ -889,15 +889,16 @@ static cmark_node *handle_pointy_brace(subject *subj, int options) {
     return make_autolink(subj, subj->pos - 1 - matchlen, subj->pos - 1, contents, 1);
   }
 
-  // finally, try to match an html tag
-  matchlen = scan_html_tag(&subj->input, subj->pos);
-  if (matchlen > 0) {
-    contents = cmark_chunk_dup(&subj->input, subj->pos - 1, matchlen + 1);
-    subj->pos += matchlen;
-    cmark_node *node = make_raw_html(subj, subj->pos - matchlen - 1, subj->pos - 1, contents);
-    adjust_subj_node_newlines(subj, node, matchlen, 1, options);
-    return node;
-  }
+// MACTALK - CMARK_NODE_HTML_INLINE 무시 처리
+//  // finally, try to match an html tag
+//  matchlen = scan_html_tag(&subj->input, subj->pos);
+//  if (matchlen > 0) {
+//    contents = cmark_chunk_dup(&subj->input, subj->pos - 1, matchlen + 1);
+//    subj->pos += matchlen;
+//    cmark_node *node = make_raw_html(subj, subj->pos - matchlen - 1, subj->pos - 1, contents);
+//    adjust_subj_node_newlines(subj, node, matchlen, 1, options);
+//    return node;
+//  }
 
   if (options & CMARK_OPT_LIBERAL_HTML_TAG) {
     matchlen = scan_liberal_html_tag(&subj->input, subj->pos);
