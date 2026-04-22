@@ -1397,15 +1397,16 @@ static int parse_inline(cmark_parser *parser, subject *subj, cmark_node *parent,
     new_inl = handle_backslash(parser, subj);
     break;
 
-// MACTALK - ! [ ] 무시 처리
-//  case '[':
-//    advance(subj);
-//    new_inl = make_str(subj, subj->pos - 1, subj->pos - 1, cmark_chunk_literal("["));
-//    push_bracket(subj, false, new_inl);
-//    break;
-//  case ']':
-//    new_inl = handle_close_bracket(parser, subj);
-//    break;
+  case '[':
+    advance(subj);
+    new_inl = make_str(subj, subj->pos - 1, subj->pos - 1, cmark_chunk_literal("["));
+    push_bracket(subj, false, new_inl);
+    break;
+  case ']':
+    new_inl = handle_close_bracket(parser, subj);
+    break;
+          
+// MACTALK - ! 무시 처리
 //  case '!':
 //    advance(subj);
 //    if (peek_char(subj) == '[' && peek_char_n(subj, 1) != '^') {
