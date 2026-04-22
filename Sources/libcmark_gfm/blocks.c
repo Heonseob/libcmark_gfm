@@ -670,9 +670,8 @@ cmark_node *cmark_parse_file(FILE *f, int options) {
 cmark_node *cmark_parse_document(const char *buffer, size_t len, int options) {
   cmark_parser *parser = cmark_parser_new(options);
 
-    // MACTALK - CMARK_NODE_STRIKETHROUGH 지원
-//  cmark_syntax_extension *extension = create_strikethrough_extension();
-//  cmark_parser_attach_syntax_extension(parser, extension);
+  cmark_syntax_extension *extension = create_strikethrough_extension();
+  cmark_parser_attach_syntax_extension(parser, extension);
     
   cmark_node *document;
 
@@ -1119,43 +1118,41 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
     S_find_first_nonspace(parser, input);
     indented = parser->indent >= CODE_INDENT;
 
-// MACTALK - CMARK_NODE_HEADING 무시 처리
-//    if (!indented && peek_at(input, parser->first_nonspace) == '>') {
-//
-//      bufsize_t blockquote_startpos = parser->first_nonspace;
-//
-//      S_advance_offset(parser, input,
-//                       parser->first_nonspace + 1 - parser->offset, false);
-//      // optional following character
-//      if (S_is_space_or_tab(peek_at(input, parser->offset))) {
-//        S_advance_offset(parser, input, 1, true);
-//      }
-//      *container = add_child(parser, *container, CMARK_NODE_BLOCK_QUOTE,
-//                             blockquote_startpos + 1);
+    if (!indented && peek_at(input, parser->first_nonspace) == '>') {
 
-// MACTALK - CMARK_NODE_HEADING 무시 처리
-//    } else if (!indented && (matched = scan_atx_heading_start(
-//                                 input, parser->first_nonspace))) {
-//      bufsize_t hashpos;
-//      int level = 0;
-//      bufsize_t heading_startpos = parser->first_nonspace;
-//
-//      S_advance_offset(parser, input,
-//                       parser->first_nonspace + matched - parser->offset,
-//                       false);
-//      *container = add_child(parser, *container, CMARK_NODE_HEADING,
-//                             heading_startpos + 1);
-//
-//      hashpos = cmark_chunk_strchr(input, '#', parser->first_nonspace);
-//
-//      while (peek_at(input, hashpos) == '#') {
-//        level++;
-//        hashpos++;
-//      }
-//
-//      (*container)->as.heading.level = level;
-//      (*container)->as.heading.setext = false;
-//      (*container)->internal_offset = matched;
+      bufsize_t blockquote_startpos = parser->first_nonspace;
+
+      S_advance_offset(parser, input,
+                       parser->first_nonspace + 1 - parser->offset, false);
+      // optional following character
+      if (S_is_space_or_tab(peek_at(input, parser->offset))) {
+        S_advance_offset(parser, input, 1, true);
+      }
+      *container = add_child(parser, *container, CMARK_NODE_BLOCK_QUOTE,
+                             blockquote_startpos + 1);
+
+    } else if (!indented && (matched = scan_atx_heading_start(
+                                 input, parser->first_nonspace))) {
+      bufsize_t hashpos;
+      int level = 0;
+      bufsize_t heading_startpos = parser->first_nonspace;
+
+      S_advance_offset(parser, input,
+                       parser->first_nonspace + matched - parser->offset,
+                       false);
+      *container = add_child(parser, *container, CMARK_NODE_HEADING,
+                             heading_startpos + 1);
+
+      hashpos = cmark_chunk_strchr(input, '#', parser->first_nonspace);
+
+      while (peek_at(input, hashpos) == '#') {
+        level++;
+        hashpos++;
+      }
+
+      (*container)->as.heading.level = level;
+      (*container)->as.heading.setext = false;
+      (*container)->internal_offset = matched;
 
 // MACTALK - CMARK_NODE_CODE_BLOCK 무시 처리
 //    } else if (!indented && (matched = scan_open_code_fence(
@@ -1184,20 +1181,19 @@ static void open_new_blocks(cmark_parser *parser, cmark_node **container,
 //      // note, we don't adjust parser->offset because the tag is part of the
 //      // text
   
-// MACTALK - CMARK_NODE_HEADING 무시 처리
-//    } else if (!indented && cont_type == CMARK_NODE_PARAGRAPH &&
-//               (lev =
-//                    scan_setext_heading_line(input, parser->first_nonspace))) {
-//      // finalize paragraph, resolving reference links
-//      has_content = resolve_reference_link_definitions(parser, *container);
-//
-//      if (has_content) {
-//
-//        (*container)->type = (uint16_t)CMARK_NODE_HEADING;
-//        (*container)->as.heading.level = lev;
-//        (*container)->as.heading.setext = true;
-//        S_advance_offset(parser, input, input->len - 1 - parser->offset, false);
-//      }
+    } else if (!indented && cont_type == CMARK_NODE_PARAGRAPH &&
+               (lev =
+                    scan_setext_heading_line(input, parser->first_nonspace))) {
+      // finalize paragraph, resolving reference links
+      has_content = resolve_reference_link_definitions(parser, *container);
+
+      if (has_content) {
+
+        (*container)->type = (uint16_t)CMARK_NODE_HEADING;
+        (*container)->as.heading.level = lev;
+        (*container)->as.heading.setext = true;
+        S_advance_offset(parser, input, input->len - 1 - parser->offset, false);
+      }
       
 // MACTALK - CMARK_NODE_THEMATIC_BREAK 무시 처리
 //    } else if (!indented &&
