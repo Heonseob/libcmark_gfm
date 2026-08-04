@@ -24,6 +24,7 @@
 #include "footnotes.h"
 
 #include "strikethrough.h"
+#include "registry.h"
 
 #define CODE_INDENT 4
 #define TAB_STOP 4
@@ -667,12 +668,28 @@ cmark_node *cmark_parse_file(FILE *f, int options) {
   return document;
 }
 
+static int strikethrough_extension_registration(cmark_plugin *plugin) {
+  cmark_plugin_register_syntax_extension(plugin, create_strikethrough_extension());
+  return 1;
+}
+
+static void ensure_strikethrough_registered(void) {
+  static int registered = 0;
+
+  if (!registered) {
+    cmark_register_plugin(strikethrough_extension_registration);
+    registered = 1;
+  }
+}
+
 cmark_node *cmark_parse_document(const char *buffer, size_t len, int options) {
   cmark_parser *parser = cmark_parser_new(options);
 
-  cmark_syntax_extension *extension = create_strikethrough_extension();
-  cmark_parser_attach_syntax_extension(parser, extension);
-    
+  ensure_strikethrough_registered();
+  cmark_syntax_extension *extension = cmark_find_syntax_extension("strikethrough");
+  if (extension)
+    cmark_parser_attach_syntax_extension(parser, extension);
+
   cmark_node *document;
 
   S_parser_feed(parser, (const unsigned char *)buffer, len, true);
